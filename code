@@ -1,0 +1,219 @@
+// Line Follower Robot Code with L298N Motor Driver
+// IR Sensors connected to digital pins
+#define IR_LEFT 2    // i1 - Left sensor
+#define IR_CENTER 3  // i2 - Center sensor
+#define IR_RIGHT 4   // i3 - Right sensor
+
+// L298N Motor Driver pins
+// Motor A (Right Motor)
+#define MOTOR_A_IN1 5   // Direction pin 1
+#define MOTOR_A_IN2 6   // Direction pin 2
+#define MOTOR_A_ENA 9   // PWM pin for speed control (Enable A)
+
+// Motor B (Left Motor)
+#define MOTOR_B_IN3 7   // Direction pin 3
+#define MOTOR_B_IN4 8   // Direction pin 4
+#define MOTOR_B_ENB 10  // PWM pin for speed control (Enable B)
+
+// Motor speed constants (0-255)
+#define SPEED_MAX 255      // Maximum speed
+#define SPEED_FAST 200     // Normal forward speed
+#define SPEED_TURN 120     // Speed during turns
+#define SPEED_SLOW 80      // Slow speed for sharp turns
+
+void setup() {
+  // Initialize IR sensors as input
+  pinMode(IR_LEFT, INPUT);
+  pinMode(IR_CENTER, INPUT);
+  pinMode(IR_RIGHT, INPUT);
+  
+  // Initialize L298N motor control pins as output
+  pinMode(MOTOR_A_IN1, OUTPUT);
+  pinMode(MOTOR_A_IN2, OUTPUT);
+  pinMode(MOTOR_A_ENA, OUTPUT);
+  
+  pinMode(MOTOR_B_IN3, OUTPUT);
+  pinMode(MOTOR_B_IN4, OUTPUT);
+  pinMode(MOTOR_B_ENB, OUTPUT);
+  
+  // Enable motors (set to HIGH for full speed control via PWM)
+  digitalWrite(MOTOR_A_ENA, HIGH);
+  digitalWrite(MOTOR_B_ENB, HIGH);
+  
+  // Serial communication for debugging
+  Serial.begin(9600);
+  Serial.println("Line Follower Robot - L298N Driver");
+  Serial.println("Starting in 2 seconds...");
+  
+  delay(2000); // Wait 2 seconds before starting
+}
+
+void loop() {
+  // Read sensor values (LOW = Black line detected, HIGH = White surface)
+  int leftSensor = digitalRead(IR_LEFT);
+  int centerSensor = digitalRead(IR_CENTER);
+  int rightSensor = digitalRead(IR_RIGHT);
+  
+  // Debug: Print sensor values
+  Serial.print("L:");
+  Serial.print(leftSensor);
+  Serial.print(" C:");
+  Serial.print(centerSensor);
+  Serial.print(" R:");
+  Serial.println(rightSensor);
+  
+  // Line following logic
+  // Case 1: Center sensor on line - Move forward
+  if (leftSensor == HIGH && centerSensor == LOW && rightSensor == HIGH) {
+    moveForward(SPEED_FAST);
+    Serial.println("Moving Forward");
+  }
+  
+  // Case 2: Left sensor on line - Turn left
+  else if (leftSensor == LOW && centerSensor == HIGH && rightSensor == HIGH) {
+    turnLeft(SPEED_FAST, SPEED_TURN);
+    Serial.println("Turning Left");
+  }
+  
+  // Case 3: Right sensor on line - Turn right
+  else if (leftSensor == HIGH && centerSensor == HIGH && rightSensor == LOW) {
+    turnRight(SPEED_TURN, SPEED_FAST);
+    Serial.println("Turning Right");
+  }
+  
+  // Case 4: Left and center on line - Sharp left
+  else if (leftSensor == LOW && centerSensor == LOW && rightSensor == HIGH) {
+    sharpLeft();
+    Serial.println("Sharp Left");
+  }
+  
+  // Case 5: Right and center on line - Sharp right
+  else if (leftSensor == HIGH && centerSensor == LOW && rightSensor == LOW) {
+    sharpRight();
+    Serial.println("Sharp Right");
+  }
+  
+  // Case 6: All sensors on white - Stop
+  else if (leftSensor == HIGH && centerSensor == HIGH && rightSensor == HIGH) {
+    stopMotors();
+    Serial.println("Line Lost - Stopped");
+  }
+  
+  // Case 7: All sensors on black - Move forward
+  else if (leftSensor == LOW && centerSensor == LOW && rightSensor == LOW) {
+    moveForward(SPEED_FAST);
+    Serial.println("All Black - Moving Forward");
+  }
+  
+  delay(10); // Small delay for stability
+}
+
+// Motor control functions with L298N
+
+void moveForward(int speed) {
+  // Motor A forward (right motor)
+  digitalWrite(MOTOR_A_IN1, HIGH);
+  digitalWrite(MOTOR_A_IN2, LOW);
+  analogWrite(MOTOR_A_ENA, speed);
+  
+  // Motor B forward (left motor)
+  digitalWrite(MOTOR_B_IN3, HIGH);
+  digitalWrite(MOTOR_B_IN4, LOW);
+  analogWrite(MOTOR_B_ENB, speed);
+}
+
+void moveBackward(int speed) {
+  // Motor A backward (right motor)
+  digitalWrite(MOTOR_A_IN1, LOW);
+  digitalWrite(MOTOR_A_IN2, HIGH);
+  analogWrite(MOTOR_A_ENA, speed);
+  
+  // Motor B backward (left motor)
+  digitalWrite(MOTOR_B_IN3, LOW);
+  digitalWrite(MOTOR_B_IN4, HIGH);
+  analogWrite(MOTOR_B_ENB, speed);
+}
+
+void turnLeft(int rightSpeed, int leftSpeed) {
+  // Motor A forward at higher speed (right motor)
+  digitalWrite(MOTOR_A_IN1, HIGH);
+  digitalWrite(MOTOR_A_IN2, LOW);
+  analogWrite(MOTOR_A_ENA, rightSpeed);
+  
+  // Motor B forward at lower speed (left motor)
+  digitalWrite(MOTOR_B_IN3, HIGH);
+  digitalWrite(MOTOR_B_IN4, LOW);
+  analogWrite(MOTOR_B_ENB, leftSpeed);
+}
+
+void turnRight(int rightSpeed, int leftSpeed) {
+  // Motor A forward at lower speed (right motor)
+  digitalWrite(MOTOR_A_IN1, HIGH);
+  digitalWrite(MOTOR_A_IN2, LOW);
+  analogWrite(MOTOR_A_ENA, rightSpeed);
+  
+  // Motor B forward at higher speed (left motor)
+  digitalWrite(MOTOR_B_IN3, HIGH);
+  digitalWrite(MOTOR_B_IN4, LOW);
+  analogWrite(MOTOR_B_ENB, leftSpeed);
+}
+
+void sharpLeft() {
+  // Motor A forward (right motor)
+  digitalWrite(MOTOR_A_IN1, HIGH);
+  digitalWrite(MOTOR_A_IN2, LOW);
+  analogWrite(MOTOR_A_ENA, SPEED_FAST);
+  
+  // Motor B backward or stopped (left motor) for sharp turn
+  digitalWrite(MOTOR_B_IN3, LOW);
+  digitalWrite(MOTOR_B_IN4, HIGH);
+  analogWrite(MOTOR_B_ENB, SPEED_SLOW);
+}
+
+void sharpRight() {
+  // Motor A backward or stopped (right motor) for sharp turn
+  digitalWrite(MOTOR_A_IN1, LOW);
+  digitalWrite(MOTOR_A_IN2, HIGH);
+  analogWrite(MOTOR_A_ENA, SPEED_SLOW);
+  
+  // Motor B forward (left motor)
+  digitalWrite(MOTOR_B_IN3, HIGH);
+  digitalWrite(MOTOR_B_IN4, LOW);
+  analogWrite(MOTOR_B_ENB, SPEED_FAST);
+}
+
+void stopMotors() {
+  // Stop both motors
+  digitalWrite(MOTOR_A_IN1, LOW);
+  digitalWrite(MOTOR_A_IN2, LOW);
+  analogWrite(MOTOR_A_ENA, 0);
+  
+  digitalWrite(MOTOR_B_IN3, LOW);
+  digitalWrite(MOTOR_B_IN4, LOW);
+  analogWrite(MOTOR_B_ENB, 0);
+}
+
+// Additional utility function for pivot turns
+void pivotLeft(int speed) {
+  // Motor A forward (right motor)
+  digitalWrite(MOTOR_A_IN1, HIGH);
+  digitalWrite(MOTOR_A_IN2, LOW);
+  analogWrite(MOTOR_A_ENA, speed);
+  
+  // Motor B backward (left motor)
+  digitalWrite(MOTOR_B_IN3, LOW);
+  digitalWrite(MOTOR_B_IN4, HIGH);
+  analogWrite(MOTOR_B_ENB, speed);
+}
+
+void pivotRight(int speed) {
+  // Motor A backward (right motor)
+  digitalWrite(MOTOR_A_IN1, LOW);
+  digitalWrite(MOTOR_A_IN2, HIGH);
+  analogWrite(MOTOR_A_ENA, speed);
+  
+  // Motor B forward (left motor)
+  digitalWrite(MOTOR_B_IN3, HIGH);
+  digitalWrite(MOTOR_B_IN4, LOW);
+  analogWrite(MOTOR_B_ENB, speed);
+}
