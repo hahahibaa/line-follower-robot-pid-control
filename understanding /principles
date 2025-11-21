@@ -1,0 +1,46 @@
+Key Features:
+
+3 IR Sensors: Left (i1), Center (i2), and Right (i3) detect the black line
+L293D Motor Driver: Controls two DC motors independently with speed control
+Line Following Logic: 7 different scenarios handled (forward, left turn, right turn, sharp turns, etc.)
+
+How it works:
+
+Sensors read LOW when detecting a black line, HIGH on white surface
+When the center sensor detects the line, the robot moves forward
+When left/right sensors detect the line, the robot turns accordingly
+The robot stops if it loses the line completely
+
+L298N Specific Features:
+
+Better Speed Control: L298N has dedicated Enable pins (ENA and ENB) for precise PWM speed control on each motor independently
+Enhanced Turning Functions:
+
+turnLeft() and turnRight() now accept speed parameters for both motors
+sharpLeft() and sharpRight() use motor reversal for tighter turns
+Added pivotLeft() and pivotRight() for spinning in place
+
+
+Pin Configuration:
+
+ENA (pin 9): Controls Motor A speed via PWM
+ENB (pin 10): Controls Motor B speed via PWM
+IN1-IN4: Control motor direction
+
+
+Adjustable Speed Levels:
+
+SPEED_MAX: 255 (full power)
+SPEED_FAST: 200 (normal operation)
+SPEED_TURN: 120 (during turns)
+SPEED_SLOW: 80 (sharp maneuvers)
+
+
+
+L298N Wiring:
+
+Connect Arduino pins 5,6,9 to L298N's IN1, IN2, ENA
+Connect Arduino pins 7,8,10 to L298N's IN3, IN4, ENB
+Make sure to connect the L298N's 12V input and ground properly
+
+The L298N provides better torque and more precise speed control compared to the L293D!RetryClaude can make mistakes. Please double-check responses.
